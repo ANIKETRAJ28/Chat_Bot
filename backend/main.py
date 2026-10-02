@@ -5,12 +5,21 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from google import genai
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
+
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["http://localhost:5173"],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"]
+)
 
 class Person(BaseModel):
   name: str
@@ -72,9 +81,9 @@ async def getChat(chat: ChatRequest):
 
     for chunk in response:
       if chunk.text:
-        yield chunk.text
+        yield f"data: {chunk.text}\n\n"
     
   return StreamingResponse(
     generate_response(contents),
-    media_type="text/plain"
+    media_type="text/event-stream"
   )
